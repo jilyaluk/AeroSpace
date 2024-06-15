@@ -3,6 +3,7 @@ import Common
 import Foundation
 import HotKey
 import TOMLKit
+import os.signpost
 
 private var hotkeys: [String: HotKey] = [:]
 
@@ -21,11 +22,14 @@ extension HotKey {
     }
 }
 
+private let pointsOfInterest = OSSignposter(subsystem: Bundle.main.bundleIdentifier!, category: .pointsOfInterest)
+
 var activeMode: String? = mainModeId
 func activateMode(_ targetMode: String?) {
     let targetBindings = targetMode.flatMap { config.modes[$0] }?.bindings ?? [:]
     for binding in targetBindings.values where !hotkeys.keys.contains(binding.binding) {
         hotkeys[binding.binding] = HotKey(key: binding.key, modifiers: binding.modifiers, keyDownHandler: {
+            pointsOfInterest.emitEvent("keyDown", "\(binding.binding) pressed")
             if let activeMode {
                 refreshSession(forceFocus: true) {
                     _ = config.modes[activeMode]?.bindings[binding.binding]?.commands.run(.focused)
